@@ -1,48 +1,44 @@
-body, html {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
+// Reemplaza esto con tu JWT Token de StreamElements
+const token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbiI6IjM4QTNGNjhBNjVDRTFCNzFFN0JGIiwicmVhZF9vbmx5Ijp0cnVlLCJwcmV2ZW50X21hc3RlciI6dHJ1ZSwidHdpdGNoX2lkIjoiMTUwMjgxNDcxIn0.3jQRujU2JjXaD8yDL_gGOaSVsjI5EAzUDw4MKK8fHiw";
+
+// Duración de la animación en milisegundos (12 segundos)
+const duracionAnimacionMs = 12000;
+
+function ejecutarAlerta(nombre) {
+    const slotDisponible = document.querySelector('.alerta-personaje.hidden');
+    if (!slotDisponible) return;
+
+    const textoElement = slotDisponible.querySelector('.texto-nombre');
+    textoElement.innerText = nombre;
+
+    slotDisponible.classList.remove('hidden');
+    slotDisponible.classList.add('active');
+
+    setTimeout(() => {
+        slotDisponible.classList.remove('active');
+        slotDisponible.classList.add('hidden');
+        textoElement.innerText = ''; 
+    }, duracionAnimacionMs);
 }
 
-#alerta {
-    position: absolute;
-    bottom: 50px; /* Ajusta la altura a la que camina el personaje */
-    left: -200px; /* Empieza fuera de la pantalla */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    visibility: hidden;
-}
+// Conexión con StreamElements (no modificar)
+const socket = io("https://realtime.streamelements.com", { transports: ["websocket"] });
 
-#alerta.visible {
-    visibility: visible;
-    animation: caminar 10s linear forwards;
-}
+socket.on("connect", () => {
+    console.log("Conectado a StreamElements");
+    socket.emit("authenticate", { method: "jwt", token: token });
+});
 
-#alerta img {
-    width: 150px; /* Ajusta el tamaño de tu personaje */
-    height: auto;
-}
-
-.texto-nombre {
-    background-color: rgba(0, 0, 0, 0.7);
-    color: #FFFFFF;
-    padding: 5px 15px;
-    border-radius: 15px;
-    font-family: 'Arial', sans-serif;
-    font-size: 24px; /* Tamaño del nombre */
-    font-weight: bold;
-    margin-bottom: 10px;
-}
-
-/* Animación de caminar a través de la pantalla */
-@keyframes caminar {
-    0% {
-        left: -200px; /* Posición inicial (fuera por la izquierda) */
+socket.on("event", (event) => {
+    if (event.type === 'follower') {
+        const username = event.data.username;
+        ejecutarAlerta(username);
     }
-    100% {
-        left: 100%; /* Posición final (fuera por la derecha) */
+});
+
+socket.on("event:test", (event) => {
+    if (event.listener === 'follower-latest') {
+        const username = event.event.name;
+        ejecutarAlerta(username);
     }
-}
+});
